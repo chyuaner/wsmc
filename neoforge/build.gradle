@@ -84,6 +84,12 @@ sourceSets {
 	}
 }
 
+configurations.jarJar {
+	resolutionStrategy {
+		force "io.netty:netty-codec-http:${project.netty_version}"
+	}
+}
+
 dependencies {
 	implementation "net.neoforged:neoforge:${neo_version}"
 
