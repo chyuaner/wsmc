@@ -14,6 +14,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.util.CharsetUtil;
@@ -25,7 +26,7 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 	 * This will set your maximum allowable frame payload length.
 	 * Setting this value for big modpack.
 	 */
-	public final static String maxFramePayloadLength = System.getProperty("wsmc.maxFramePayloadLength", "65536");
+	public final static String maxFramePayloadLength = System.getProperty("wsmc.maxFramePayloadLength", "67108864");
 
 	/**
 	 * This will be called when a WebSocket upgrade is received.
@@ -74,12 +75,7 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 					this.onWsmcHandshake.accept(httpRequest);
 				}
 
-				// Adding new handler to the existing pipeline to handle WebSocket Messages
-				ctx.pipeline().replace(this, "WsmcWebSocketServerHandler", new WebSocketHandler.WebSocketServerHandler());
-
-				WSMC.debug("Opened Channel: " + ctx.channel());
-
-				int maxFramePayloadLength = 65536;
+				int maxFramePayloadLength = 67108864;
 
 				try {
 					maxFramePayloadLength = Integer.parseInt(HttpServerHandler.maxFramePayloadLength);
@@ -88,6 +84,12 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 				}
 
 				System.out.println("maxFramePayloadLength: " + maxFramePayloadLength);
+
+				// Adding new handler to the existing pipeline to handle WebSocket Messages
+				ctx.pipeline().replace(this, "WsmcWebSocketServerHandler", new WebSocketHandler.WebSocketServerHandler());
+				ctx.pipeline().addBefore("WsmcWebSocketServerHandler", "WsmcFrameAggregator", new WebSocketFrameAggregator(maxFramePayloadLength));
+
+				WSMC.debug("Opened Channel: " + ctx.channel());
 				// Do the Handshake to upgrade connection from HTTP to WebSocket protocol
 				WebSocketServerHandshakerFactory wsFactory =
 							new WebSocketServerHandshakerFactory(url, null, true, maxFramePayloadLength);

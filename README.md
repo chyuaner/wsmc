@@ -12,6 +12,19 @@ This branch is for 1.20.5 to 1.21.4, inclusive. 1.21.5 to 1.21.10 are known to w
 
 This mod runs standalone and does not have any dependency.
 
+## 本 Fork 修改說明
+
+本 Fork 版本以 `wsmc-0.7.2-neoforge-fix-350` 為基礎回填，主要針對大型模組包連線與 NeoForge 環境進行了相容性修復與傳輸增強：
+
+1. **支援大型模組包大封包與分片處理（Large Packet & Frame Aggregation）**
+   * **預設 Payload 上限提升**：將 `wsmc.maxFramePayloadLength` 的預設值從 `65536`（64KB）提升至 `67108864`（64MB），解決大型模組包在網路同步大量註冊表與資料時，因封包過大導致 Netty 拋出 `Max frame length of x has been exceeded` 的斷線錯誤。
+   * **加入 WebSocketFrameAggregator**：在伺服器端（`HttpServerHandler`）與客戶端（`WebSocketClientHandler`）的 Netty Pipeline 中加入 `WebSocketFrameAggregator`，自動聚合分片傳輸的 WebSocket Frame。
+   * **支援 Continuation Frame**：在 `WebSocketHandler` 的接收端（`channelRead`）加入對 `ContinuationWebSocketFrame` 的支援，確保接收到分片幀時能正確讀取 Payload 內容。
+
+2. **還原 NeoForge `netty-codec-http` Jar-in-Jar 打包設定**
+   * 原版 Minecraft / NeoForge 執行環境並未內建 `netty-codec-http`，先前上游誤判原版自帶該函式庫而移除，導致 NeoForge 載入時發生 `ClassNotFoundException`。
+   * 本 Fork 於 `neoforge/build.gradle` 與 `common.properties` 還原了 `netty-codec-http`（4.1.97.Final）的 `jarJar` 打包機制，確保生成的 NeoForge JAR 能開箱即用且獨立正常運作。
+
 ## When this mod is installed on a server:
 * The server would allow players to connect via WebSocket.
 * Players can still join using vanilla TCP.

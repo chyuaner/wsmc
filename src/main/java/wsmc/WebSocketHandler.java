@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.ContinuationWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.buffer.ByteBuf;
 
@@ -62,7 +63,7 @@ public abstract class WebSocketHandler extends ChannelDuplexHandler {
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		if (msg instanceof WebSocketFrame) {
-			if (msg instanceof BinaryWebSocketFrame) {
+			if (msg instanceof BinaryWebSocketFrame || msg instanceof ContinuationWebSocketFrame) {
 				ByteBuf content = ((WebSocketFrame) msg).content();
 
 				if (WSMC.debug()) {

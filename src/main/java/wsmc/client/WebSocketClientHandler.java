@@ -20,6 +20,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler;
@@ -42,12 +43,12 @@ public class WebSocketClientHandler extends WebSocketHandler {
 	 * This will set your maximum allowable frame payload length.
 	 * Setting this value for big modpack.
 	 */
-	public final static String maxFramePayloadLength = System.getProperty("wsmc.maxFramePayloadLength", "65536");
+	public final static String maxFramePayloadLength = System.getProperty("wsmc.maxFramePayloadLength", "67108864");
 
 	public WebSocketClientHandler(URI uri, String httpHostname) {
 		super("S->C", "C->S");
 
-		int maxFramePayloadLength = 65536;
+		int maxFramePayloadLength = 67108864;
 
 		try {
 			maxFramePayloadLength = Integer.parseInt(WebSocketClientHandler.maxFramePayloadLength);
@@ -72,10 +73,18 @@ public class WebSocketClientHandler extends WebSocketHandler {
 			final WebSocketClientHandler handler = new WebSocketClientHandler(connInfo.uri, connInfo.httpHostname);
 			WSMC.info("Connecting to WebSocket Server:\n" + connInfo.toString());
 
+			int maxFramePayloadLength = 67108864;
+			try {
+				maxFramePayloadLength = Integer.parseInt(WebSocketClientHandler.maxFramePayloadLength);
+			} catch (Exception e){
+				WSMC.debug("Unable to parse maxFramePayloadLength, value: " + WebSocketClientHandler.maxFramePayloadLength);
+			}
+
 			pipeline.addAfter("timeout", "WsmcHttpClient", new HttpClientCodec());
 			pipeline.addAfter("WsmcHttpClient", "WsmcHttpAggregator", new HttpObjectAggregator(8192*4));
 			pipeline.addAfter("WsmcHttpAggregator", "WsmcCompressionHandler", WebSocketClientCompressionHandler.INSTANCE);
-			pipeline.addAfter("WsmcCompressionHandler", "WsmcWebSocketClientHandler", handler);
+			pipeline.addAfter("WsmcCompressionHandler", "WsmcFrameAggregator", new WebSocketFrameAggregator(maxFramePayloadLength));
+			pipeline.addAfter("WsmcFrameAggregator", "WsmcWebSocketClientHandler", handler);
 
 			if ("wss".equalsIgnoreCase(connInfo.uri.getScheme())) {
 				try {
