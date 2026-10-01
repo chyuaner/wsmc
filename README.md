@@ -25,6 +25,10 @@ This mod runs standalone and does not have any dependency.
    * 原版 Minecraft / NeoForge 執行環境並未內建 `netty-codec-http`，先前上游誤判原版自帶該函式庫而移除，導致 NeoForge 載入時發生 `ClassNotFoundException`。
    * 本 Fork 於 `neoforge/build.gradle` 與 `common.properties` 還原了 `netty-codec-http`（4.1.97.Final）的 `jarJar` 打包機制，確保生成的 NeoForge JAR 能開箱即用且獨立正常運作。
 
+3. **修復 MCSManager 等面板的舊版伺服器狀態取得（Legacy Ping 相容性）**
+   * **問題修正**：MCSManager 等管理面板使用 2 個位元組的 Legacy Server List Ping（`0xFE 0x01`）查詢伺服器在線人數與延遲。先前伺服器端 `HttpGetSniffer` 硬性要求緩衝區大於 3 個位元組才執行判斷，導致 2-byte 封包陷入死鎖等待逾時。
+   * **最佳化嗅探判斷**：改為只要首個位元組非 HTTP GET（`'G'`）便立即識別為原生 TCP 並放行至後續管線，徹底解決 MCSManager 或第三方伺服器監控工具狀態取得失效的問題。
+
 ## When this mod is installed on a server:
 * The server would allow players to connect via WebSocket.
 * Players can still join using vanilla TCP.
